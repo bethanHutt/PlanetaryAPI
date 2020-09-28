@@ -32,5 +32,14 @@ def parameters():
     return jsonify(message=f'Welcome {name}, you are old enough.')
 
 
+@app.route('/url_variables/<string:name>/<int:age>')
+def url_variables(name: str, age: int):
+    print('here')
+    if age < 18:
+        return jsonify(message=f'Sorry {name}, you are not old enough.'), 401
+
+    return jsonify(message=f'Welcome {name}, you are old enough.')
+
+
 if __name__ == '__main__':
     app.run()
