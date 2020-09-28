@@ -123,7 +123,25 @@ def planets():
     return jsonify(result)
 
 
+@app.route('/register', methods=['POST'])
+def register():
+    email = request.form['email']
+    preexisting_user = User.query.filter_by(email=email).first()
+
+    if preexisting_user:
+        return jsonify(message='That email already exists.'), 409
+
+    first_name = request.form['first_name']
+    last_name = request.form['last_name']
+    password = request.form['password']
+
+    user = User(first_name=first_name, last_name=last_name,
+                email=email, password=password)
+
+
 # Database Models
+
+
 class User(db.Model):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
