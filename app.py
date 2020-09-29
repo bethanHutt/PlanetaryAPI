@@ -13,14 +13,28 @@ from sqlalchemy import Integer
 
 from flask_marshmallow import Marshmallow
 
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import create_access_token
+
+from flask_mail import Mail
+from flask_mail import Message
+
 base_dir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
     base_dir, 'planets.db')
 
+app.config['JWT_SECRET_KEY'] = os.environ['JWT_SECRET_KEY']
+app.config['MAIL_SERVER'] = os.environ['MAIL_SERVER']
+app.config['MAIL_USERNAME'] = os.environ['MAIL_USERNAME']
+app.config['MAIL_PASSWORD'] = os.environ['MAIL_PASSWORD']
+
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
+jwt = JWTManager(app)
+mail = Mail(app)
 
 
 @app.cli.command('db_create')
@@ -138,6 +152,43 @@ def register():
     user = User(first_name=first_name, last_name=last_name,
                 email=email, password=password)
 
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify(message='User created successfully.'), 201
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    if request.is_json:
+        email = request.json['email']
+        password = request.json['password']
+    else:
+        email = request.form['email']
+        password = request.form['password']
+
+    test = User.query.filter_by(email=email, password=password).first()
+    if test:
+        access_token = create_access_token(identity=email)
+        return jsonify(message='Login succeeded!', access_token=access_token)
+
+    return jsonify(message='Bad email or password.'), 401
+
+
+@app.route('/retrieve_password/<string:email>', methods=['GET'])
+def retrieve_password(email: str):
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify(message='That email doesn\'t exist.'), 401
+
+    msg = Message(f'Your Planetary API password is: {user.password}',
+                  sender='admin@planetary-api.com',
+                  recipients=[email])
+
+    mail.send(msg)
+
+    return jsonify(message=f'Password sent to {email}')
 
 # Database Models
 
