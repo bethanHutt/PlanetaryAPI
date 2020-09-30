@@ -180,12 +180,21 @@ def add_planet():
 def update_planet():
     planet_id = int(request.form['planet_id'])
 
-    preexisting_planet = Planet.query.filter_by(
+    planet = Planet.query.filter_by(
         planet_id=planet_id).first()
 
-    if not preexisting_planet:
-        return jsonify(message='There is no planet by that name'), 409
+    if not planet:
+        return jsonify(message='That planet does not exist'), 404
 
+    planet.planet_name = request.form['planet_name']
+    planet.planet_type = request.form['planet_type']
+    planet.home_star = request.form['home_star']
+    planet.distance = float(request.form['distance'])
+    planet.mass = float(request.form['mass'])
+    planet.radius = float(request.form['radius'])
+
+    db.session.commit()
+    return jsonify(message='You updated a planet'), 202
 
 
 @app.route('/register', methods=['POST'])
